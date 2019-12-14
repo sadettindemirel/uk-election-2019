@@ -1,0 +1,209 @@
+---
+title: "uk_candidates_twitter"
+author: "Sadettin Demirel"
+date: "12/12/2019"
+output: html_document
+---
+
+
+#### **Kullanıclacak Paketler**
+```{r message=FALSE, warning=FALSE}
+library(rtweet)
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+library(wordcloud2)
+
+options(scipen=999)
+```
+
+Tema ve font
+```{r}
+extrafont::loadfonts(device = "win")
+windowsFonts("Proxima Nova" = windowsFont("Proxima Nova"))
+
+renk <- c("Boris Johnson" ="#2b8cbe",
+          "Jeremy Corbyn"="#fb6a4a",
+          "The Labour Party"="#fb6a4a",
+          "Conservatives" ="#2b8cbe")
+
+theme_custom2 <- function() {
+  theme_minimal() +
+    theme(
+      text = element_text(family = "Proxima Nova", color = "gray25"),
+      plot.title = element_text(face = "bold",size = 14),
+      plot.subtitle = element_text(size = 13),
+      axis.text.x= element_text(size=11),
+      axis.text.y = element_text(size=11),
+      plot.caption = element_text(size = 11, color = "gray30"),
+      plot.background = element_rect(fill = "#f6f5f5"),
+      legend.position = "none",
+      strip.background = element_rect(colour = "#d9d9d9", fill = "#d9d9d9"),
+      strip.text.x = element_text(size = 11, colour = "gray25", face = "bold"))
+}
+```
+
+Veri setini içeri aktaralım
+
+```{r}
+uk_election_tweets <- readRDS("C:/Users/Sadettin/Rstats/uk_election/uk_election_tweets.rds")
+View(uk_election_tweets)
+```
+
+Veriye göz atalım
+```{r}
+names(uk_election_tweets) %>% head()
+```
+
+
+#### **Veri Düzenleme & Derleme**
+
+İşimize yarayacak değişkenleri seçtik ve tarih verisini düzenledik. Seçim günü atılan tweetleri hariç tuttuk.
+
+```{r}
+ukelection_tidy <- uk_election_tweets %>% 
+  select(73,2,3,4,5:7,12:14,17,26,31,49,50,55,78) %>% 
+  mutate(date = date(created_at), ay = month(created_at), year = year(created_at), hafta = week(created_at)) %>% 
+  filter(date < "2019/12/12")
+
+glimpse(ukelection_tidy)
+```
+
+
+#### **Analiz ve Görselleştirme**
+
+Bir çok analiz yapabiliriz. İlk olarak parti ve adayların attıkları tweetlere ve etkileşimlere bakalım
+
+##### **2019 yılında atılan tweet sayısı**
+
+```{r}
+ukelection_tidy  %>% filter (year == "2019", ay>6) %>%  ggplot(aes(name,fill = name))+geom_histogram(stat = "count", position = "dodge")+scale_fill_manual(values = renk)
+```
+
+
+##### **Etkileşim**
+
+Begeni ve retweet sayılarının dağılımı. Aşağıdaki işlemde begeni ve retweet sayısı toplanarak ortalaması alında ve yeni değişkene etkileşim olarak adlandırıldı.
+
+```{r warning=FALSE}
+ukelection_tidy  %>% filter (year == "2019", ay > 7 ) %>% mutate(etkilesim = (favorite_count+retweet_count)/2) %>%  ggplot(aes(hafta,etkilesim, fill = name))+geom_col()+facet_wrap(~name)+scale_fill_manual(values = renk)+theme_custom2()+
+  labs(x="hafta",y="",
+       title = "Liderlerin ve Partilerin Haftalık Twitter Etkileşimleri",
+       subtitle = "Ağustos - Aralık 2019 Arasındaki Tweetler Analize Dahil Edilmiştir.",
+       caption = "Kaynak: Twitter - Rtweet / demirelsadettin / Etkileşim retweet ve begeni sayısının 2'ye bölünmesiyle elde edilmiştir")+theme_custom2()
+```
+
+```{r}
+ukelection_tidy  %>% filter (year == "2019", ay> 7) %>% 
+  mutate(etkilesim = (favorite_count+retweet_count)/followers_count*100) %>% ggplot(aes(hafta,etkilesim, fill = name))+geom_col()+facet_wrap(~name)+scale_fill_manual(values = renk)+theme_custom2()+labs(x="hafta",y="",
+       title = "100 takipçi başına alınan etkileşim sayısı",
+       subtitle = "Ağustos - Aralık 2019 Arasındaki Tweetler Analize Dahil Edilmiştir.",
+       caption = "Kaynak: Twitter - Rtweet - demirelsadettin")+theme_custom2()
+```
+
+
+##### **Adaylar ve partiler kullandığı etiketler**
+
+
+* Corbyn'in kullandığu etiketler
+
+```{r}
+corbyn_etiketler <- ukelection_tidy %>% filter(name == "Jeremy Corbyn", year == "2019") %>% select(hashtags)
+
+corbyn_etiketler2 <-  data.frame(matrix(unlist(corbyn_etiketler$hashtags), nrow = 3091, byrow = TRUE),stringsAsFactors = FALSE)
+
+colnames(corbyn_etiketler2) <- c("etiket")
+```
+
+```{r}
+corbyn_etiketler3 <-  corbyn_etiketler2 %>% count(etiket, sort = TRUE) %>% na.omit() 
+
+corbyn_etiketler3 %>% head()
+```
+
+* Johnson'ın kullandığı etiketler
+
+```{r}
+johnson_etiketler <- ukelection_tidy %>% filter(name == "Boris Johnson", year == "2019") %>% select(hashtags)
+
+johnson_etiketler2 <-  data.frame(matrix(unlist(johnson_etiketler$hashtags), nrow = 1544, byrow = TRUE),stringsAsFactors = FALSE)
+
+colnames(johnson_etiketler2) <- c("etiket")
+```
+
+```{r}
+johnson_etiketler3 <- johnson_etiketler2 %>% count(etiket, sort = TRUE) %>% na.omit() 
+
+johnson_etiketler3 %>% head()
+```
+
+* Labour - İşçi partisinin kullandığı etiketler
+
+```{r}
+labour_etiketler <- ukelection_tidy %>% filter(name == "The Labour Party", year == "2019") %>% select(hashtags)
+
+labour_etiketler2 <-  data.frame(matrix(unlist(labour_etiketler$hashtags), nrow = 3103, byrow = TRUE),stringsAsFactors = FALSE)
+
+colnames(labour_etiketler2) <- c("etiket")
+```
+
+```{r}
+labour_etiketler3 <-labour_etiketler2  %>% count(etiket, sort = TRUE) %>% na.omit() 
+
+labour_etiketler3%>% head()
+```
+
+* Conservative - Muhafazakar partinin kullandığı etiketler
+
+```{r}
+conservatives_etiketler <- ukelection_tidy %>% filter(name == "Conservatives", year == "2019") %>% select(hashtags)
+
+conservatives_etiketler2 <-  data.frame(matrix(unlist(conservatives_etiketler$hashtags), nrow = 3678, byrow = TRUE),stringsAsFactors = FALSE)
+
+colnames(conservatives_etiketler2) <- c("etiket")
+```
+
+```{r}
+conservatives_etiketler3 <- conservatives_etiketler2 %>%  count(etiket, sort = TRUE) %>% na.omit()
+
+conservatives_etiketler3 %>%  head()
+```
+
+parti ve adayların kullandığı etiketleri birleştirip en çok kullanılan 10 etikete bakalım.
+
+```{r}
+cons_john <- bind_rows(johnson_etiketler3, conservatives_etiketler3) %>% group_by(etiket) %>% summarize(toplam = sum(n)) %>% arrange(desc(toplam)) %>% mutate( parti = "muhafazakar - johnson") %>% filter(toplam>=49)
+
+ggplot(cons_john ,aes(fct_reorder(etiket, toplam),toplam))+
+  geom_col(fill = "#2b8cbe")+
+  coord_flip()+
+  theme_custom2()+labs(x="",y="",
+       title = "2019 Yılında En Çok Kullanılan 10 Etiket",
+       subtitle = " Muhafazakar Parti ve Liderine ait tüm tweetler esas alınmıştır",
+       caption = "Kaynak: Twitter - Rtweet - demirelsadettin")+theme_custom2()
+```
+
+```{r}
+labour_corbyn <- bind_rows(corbyn_etiketler3 , labour_etiketler3) %>% group_by(etiket) %>% summarize(toplam = sum(n)) %>% arrange(desc(toplam))  %>%  mutate(parti = "işçi partisi - corbyn") %>% filter(toplam>=34) 
+  
+ggplot(labour_corbyn,aes(fct_reorder(etiket, toplam),toplam))+
+  geom_col(fill = "#fb6a4a")+
+  coord_flip()+
+  theme_custom2()+labs(x="",y="",
+       title = "2019 Yılında En Çok Kullanılan 10 Etiket",
+       subtitle = " İşçi Partisi ve Liderine ait tüm tweetler esas alınmıştır",
+       caption = "Kaynak: Twitter - Rtweet - demirelsadettin")+theme_custom2()
+```
+
+##### **En çok kimi retweetlemişler**
+
+Retweet_screen_name değişkeni ile 4 hesabın kimi retweetlediğini bulmak çok kolay. Görselleştirmeyi Flourish ile yaptım. Buradan ulaşabilirsiniz:
+
+* [Ag Grafiği](https://public.flourish.studio/visualisation/1087927/)
+* [Sankey Grafiği](https://public.flourish.studio/visualisation/1088144/)
+
+```{r}
+ukelection_tidy %>% group_by(screen_name, retweet_screen_name) %>% count(retweet_screen_name, sort = TRUE) %>% na.omit()  %>% head()
+```
+
+Son olarak eldeki veri ile tweet metinlerinde en çok kullanılan ifadeler ve duygu analizi de yapılabilir. Hali hazırda etiket verisi elimizde olduğu için gerek duymadım.
