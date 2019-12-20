@@ -1,8 +1,11 @@
 ---
-title: "uk_candidates_twitter"
+title: "İngiltere Seçimlerinde İşçi Partisi & Muhafazakar Parti ve Liderlerin Twitter Kullanımı"
 author: "Sadettin Demirel"
 date: "12/12/2019"
-output: html_document
+output:
+  rmarkdown::html_document:
+    theme: "spacelab"
+    highlight: "tango"
 ---
 
 
@@ -13,6 +16,7 @@ library(tidyverse)
 library(tidytext)
 library(lubridate)
 library(wordcloud2)
+library(rmarkdown)
 
 options(scipen=999)
 ```
@@ -47,7 +51,7 @@ Veri setini içeri aktaralım
 
 ```{r}
 uk_election_tweets <- readRDS("C:/Users/Sadettin/Rstats/uk_election/uk_election_tweets.rds")
-View(uk_election_tweets)
+head(uk_election_tweets)
 ```
 
 Veriye göz atalım
