@@ -3,20 +3,19 @@ title: "İngiltere Seçimlerinde İşçi Partisi & Muhafazakar Parti ve Liderler
 author: "Sadettin Demirel"
 date: "20/12/2019"
 output:
-  prettydocs::html_pretty:
-    theme: cayman
-    highlight: github
+  rmarkdown::html_document:
+    theme: darkly
 ---
 
 
 #### **Kullanıclacak Paketler**
 ```{r message=FALSE, warning=FALSE}
-library(rtweet)
-library(tidyverse)
-library(tidytext)
-library(lubridate)
-library(wordcloud2)
-library(rmarkdown)
+library("rtweet")
+library("tidyverse")
+library("tidytext")
+library("lubridate")
+library("wordcloud2")
+library("rmarkdown")
 
 options(scipen=999)
 ```
