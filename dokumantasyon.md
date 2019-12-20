@@ -2,7 +2,7 @@
 Twitter Kullanımı
 ================
 
-#### **Kullanıclacak Paketler**
+#### **Kullanılacak Paketler**
 
 ``` r
 library("rtweet")
