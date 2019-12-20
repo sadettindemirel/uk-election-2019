@@ -1,11 +1,8 @@
 ---
 title: "İngiltere Seçimlerinde İşçi Partisi & Muhafazakar Parti ve Liderlerin Twitter Kullanımı"
-author: "Sadettin Demirel"
-date: "20/12/2019"
-output:
-  rmarkdown::html_document:
-    theme: darkly
+output: github_document
 ---
+
 
 
 #### **Kullanıclacak Paketler**
